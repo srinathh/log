@@ -10,8 +10,8 @@ import (
 	"github.com/srinathh/log"
 )
 
-// TSVOutputer demonstrates writing Go log in a tab separated variable format with a custom
-// LogOutputer. Here we are simply writing to a writer here but we could have any amount
+// TSVLogWriter demonstrates writing Go log in a tab separated variable format with a custom
+// OutputFn. Here we are simply writing to a writer here but we could have any amount
 // of complexity - eg. spawning a goroutine to to write to a remote logging system.
 type TSVLogWriter struct{ w io.Writer }
 
