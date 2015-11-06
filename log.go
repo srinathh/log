@@ -367,3 +367,7 @@ func Output(calldepth int, s string) error {
 func SetOutputFn(f Outputfn) {
 	std.SetOutputFn(f)
 }
+
+func SetDefOutputFn() {
+	std.SetOutputFn(std.DefOutputFn)
+}

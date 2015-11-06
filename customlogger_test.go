@@ -27,17 +27,19 @@ func (tl *TSVLogWriter) Output(calldepth int, s string) error {
 
 func ExampleCustomlogger() {
 	var buf bytes.Buffer
-	logger := log.New(&buf, "", log.Lshortfile)
-	logger.Print("Standard Logging")
+	log.SetFlags(log.Lshortfile)
+	log.SetPrefix("")
+	log.SetOutput(&buf)
+	log.Print("Standard Logging")
 	customlogger := &TSVLogWriter{&buf}
-	logger.SetOutputFn(customlogger.Output)
-	logger.Print("Tab Separated Logging")
-	logger.SetOutputFn(logger.DefOutputFn)
-	logger.Print("Standard Logging")
+	log.SetOutputFn(customlogger.Output)
+	log.Print("Tab Separated Logging")
+	log.SetDefOutputFn()
+	log.Print("Standard Logging")
 
 	fmt.Print(&buf)
 	// Output:
-	// customlogger_test.go:31: Standard Logging
-	// customlogger_test.go	34	Tab Separated Logging
-	// customlogger_test.go:36: Standard Logging
+	// customlogger_test.go:33: Standard Logging
+	// customlogger_test.go	36	Tab Separated Logging
+	// customlogger_test.go:38: Standard Logging
 }
