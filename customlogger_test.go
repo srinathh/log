@@ -25,7 +25,7 @@ func (tl *TSVLogWriter) Output(calldepth int, s string) error {
 	return err
 }
 
-func ExampleCustomlogger() {
+func ExampleOutputFn() {
 	var buf bytes.Buffer
 	log.SetFlags(log.Lshortfile)
 	log.SetPrefix("")
