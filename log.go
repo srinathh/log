@@ -51,11 +51,12 @@ type Logger struct {
 	flag     int        // properties
 	out      io.Writer  // destination for output
 	buf      []byte     // for accumulating text to write
-	outputfn Outputfn
+	outputfn OutputFn
 }
 
-// Outputer represents a custom logging output implementation that is
-type Outputfn func(calldepth int, s string) error
+// OutputFn represents a custom logging output implementation that can be
+// swapped for the default implementation by calling Logger.SetOutputFn()
+type OutputFn func(calldepth int, s string) error
 
 // New creates a new Logger.   The out variable sets the
 // destination to which log data will be written.
@@ -74,7 +75,8 @@ func (l *Logger) SetOutput(w io.Writer) {
 	l.out = w
 }
 
-func (l *Logger) SetOutputFn(f Outputfn) {
+// SetOutputFn sets a custom logging output implementation for the logger.
+func (l *Logger) SetOutputFn(f OutputFn) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	l.outputfn = f
@@ -146,19 +148,19 @@ func (l *Logger) formatHeader(buf *[]byte, t time.Time, file string, line int) {
 	}
 }
 
-// Output writes the output for a logging event.  The string s contains
-// the text to print. If a custom LogOutputer has been set in the logger,
-// the OutputLog function in it is called. If the custom LogOutputer is nil,
-// the standard implementation is called with the string s printed
-// after the prefix specified by the flags of the
-// Logger.  A newline is appended if the last character of s is not
-// already a newline.  Calldepth is used to recover the PC and is
-// provided for generality, although at the moment on all pre-defined
-// paths it will be 2.
+// Output writes the output for a logging event. The string s contains
+// the text to print. Calldepth can be used to recover the PC and is
+// provided for generality.
 func (l *Logger) Output(calldepth int, s string) error {
 	return l.outputfn(calldepth+2, s)
 }
 
+// DefOutputFn provides the default logging output with the string s
+// printed after the prefix specified by the flags of the
+// Logger.  A newline is appended if the last character of s is not
+// already a newline.  Calldepth is used to recover the PC and is
+// provided for generality, although at the moment on all pre-defined
+// paths it will be 2.
 func (l *Logger) DefOutputFn(calldepth int, s string) error {
 	now := time.Now() // get this early.
 	var file string
@@ -364,10 +366,14 @@ func Output(calldepth int, s string) error {
 	return std.Output(calldepth+1, s) // +1 for this frame.
 }
 
-func SetOutputFn(f Outputfn) {
+// SetOutputFn can be used to plug in a custom output logging implementation
+// to the standard logger
+func SetOutputFn(f OutputFn) {
 	std.SetOutputFn(f)
 }
 
+// SetDefOutputFn can be used to reset the OutputFn of the standard logger
+// to the default implementation
 func SetDefOutputFn() {
 	std.SetOutputFn(std.DefOutputFn)
 }
