@@ -46,26 +46,25 @@ const (
 // the Writer's Write method.  A Logger can be used simultaneously from
 // multiple goroutines; it guarantees to serialize access to the Writer.
 type Logger struct {
-	mu          sync.Mutex // ensures atomic writes; protects the following fields
-	prefix      string     // prefix to write at beginning of each line
-	flag        int        // properties
-	out         io.Writer  // destination for output
-	buf         []byte     // for accumulating text to write
-	logoutputer LogOutputer
+	mu       sync.Mutex // ensures atomic writes; protects the following fields
+	prefix   string     // prefix to write at beginning of each line
+	flag     int        // properties
+	out      io.Writer  // destination for output
+	buf      []byte     // for accumulating text to write
+	outputfn Outputfn
 }
 
-// LogOutputer represents a custom logging output implementation that is
-// called by Logger.Output() if set
-type LogOutputer interface {
-	OutputLog(l *Logger, calldepth int, s string) error
-}
+// Outputer represents a custom logging output implementation that is
+type Outputfn func(calldepth int, s string) error
 
 // New creates a new Logger.   The out variable sets the
 // destination to which log data will be written.
 // The prefix appears at the beginning of each generated log line.
 // The flag argument defines the logging properties.
 func New(out io.Writer, prefix string, flag int) *Logger {
-	return &Logger{out: out, prefix: prefix, flag: flag}
+	l := &Logger{out: out, prefix: prefix, flag: flag}
+	l.SetOutputFn(l.DefOutputFn)
+	return l
 }
 
 // SetOutput sets the output destination for the logger.
@@ -75,10 +74,10 @@ func (l *Logger) SetOutput(w io.Writer) {
 	l.out = w
 }
 
-func (l *Logger) SetLogOutputer(lw LogOutputer) {
+func (l *Logger) SetOutputFn(f Outputfn) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
-	l.logoutputer = lw
+	l.outputfn = f
 }
 
 var std = New(os.Stderr, "", LstdFlags)
@@ -157,13 +156,10 @@ func (l *Logger) formatHeader(buf *[]byte, t time.Time, file string, line int) {
 // provided for generality, although at the moment on all pre-defined
 // paths it will be 2.
 func (l *Logger) Output(calldepth int, s string) error {
-	if l.logoutputer == nil {
-		return l.defOutput(calldepth+1, s)
-	}
-	return l.logoutputer.OutputLog(l, calldepth+1, s)
+	return l.outputfn(calldepth+2, s)
 }
 
-func (l *Logger) defOutput(calldepth int, s string) error {
+func (l *Logger) DefOutputFn(calldepth int, s string) error {
 	now := time.Now() // get this early.
 	var file string
 	var line int
@@ -368,6 +364,6 @@ func Output(calldepth int, s string) error {
 	return std.Output(calldepth+1, s) // +1 for this frame.
 }
 
-func SetLogOutputer(lw LogOutputer) {
-	std.SetLogOutputer(lw)
+func SetOutputFn(f Outputfn) {
+	std.SetOutputFn(f)
 }
